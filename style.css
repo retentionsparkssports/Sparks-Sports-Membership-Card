@@ -241,7 +241,7 @@ button:disabled {
 
 .topbar {
   background: var(--green);
-  padding: 20px 20px 48px;
+  padding: 26px 20px 56px;
   text-align: center;
 }
 
@@ -501,8 +501,8 @@ button:disabled {
 }
 
 .logo-img.small {
-  max-width: 132px;
-  max-height: 48px;
+  max-width: 200px;
+  max-height: 78px;
   filter: brightness(0) invert(1);
 }
 
