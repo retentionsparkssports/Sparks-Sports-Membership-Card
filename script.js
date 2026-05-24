@@ -280,7 +280,6 @@ function renderLandingPage() {
     <div class="card">
       ${renderBrandLogo()}
 
-      <div class="logo-sub">Sports Academy</div>
       <div class="divider"></div>
 
       <p class="headline">Cek Status Membership Anak</p>
