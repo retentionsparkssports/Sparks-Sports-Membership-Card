@@ -480,3 +480,200 @@ button:disabled {
     font-size: 18px;
   }
 }
+
+/* ============================================================
+   IMPROVEMENT STYLE PATCH
+   Logo, phone icon, search icon, center info, mobile polish
+============================================================ */
+
+.logo-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.logo-img {
+  max-width: 160px;
+  max-height: 74px;
+  object-fit: contain;
+  display: block;
+}
+
+.logo-img.small {
+  max-width: 132px;
+  max-height: 48px;
+  filter: brightness(0) invert(1);
+}
+
+.logo-fallback {
+  font-size: 32px;
+  font-weight: 800;
+  color: #2db87a;
+  letter-spacing: -1px;
+  line-height: 1;
+}
+
+.logo-fallback.white {
+  color: #ffffff;
+  font-size: 18px;
+}
+
+.logo-fallback .star,
+.logo-star {
+  color: #f5a623;
+}
+
+.input-row.has-icon {
+  position: relative;
+}
+
+.field-icon {
+  width: 42px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #2db87a;
+  background: #f7fffb;
+  border-right: 1.5px solid #e0e0e0;
+  flex-shrink: 0;
+}
+
+.field-icon svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+}
+
+.search-visual {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: #e6f7f0;
+  color: #2db87a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 22px;
+  animation: softPulse 1.4s ease-in-out infinite;
+}
+
+.search-visual svg {
+  width: 30px;
+  height: 30px;
+  stroke: currentColor;
+}
+
+@keyframes softPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(45, 184, 122, 0.22);
+  }
+  70% {
+    transform: scale(1.03);
+    box-shadow: 0 0 0 14px rgba(45, 184, 122, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(45, 184, 122, 0);
+  }
+}
+
+.center-badge {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #1a6b46;
+  background: #e6f7f0;
+  border: 1px solid rgba(45, 184, 122, 0.22);
+  border-radius: 999px;
+  padding: 4px 10px;
+  letter-spacing: 0.2px;
+  line-height: 1.2;
+}
+
+.branch-code {
+  display: inline-block;
+  margin-top: 6px;
+  margin-left: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #2db87a;
+  background: #ffffff;
+  border: 1px solid rgba(45, 184, 122, 0.28);
+  border-radius: 999px;
+  padding: 3px 8px;
+  letter-spacing: 0.3px;
+  line-height: 1.2;
+}
+
+.card-info {
+  flex: 1;
+}
+
+.helper-box {
+  margin-top: 18px;
+  background: #f8fdfb;
+  border: 1px solid rgba(45, 184, 122, 0.16);
+  border-radius: 12px;
+  padding: 12px 14px;
+  text-align: left;
+}
+
+.helper-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #1a6b46;
+  margin-bottom: 4px;
+}
+
+.helper-copy {
+  font-size: 11px;
+  color: #777;
+  line-height: 1.55;
+}
+
+.topbar-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.topbar-logo-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.copy-strong {
+  font-weight: 800;
+  color: #333;
+}
+
+@media (max-width: 480px) {
+  .logo-img {
+    max-width: 142px;
+    max-height: 66px;
+  }
+
+  .student-name {
+    font-size: 14px;
+  }
+
+  .center-badge {
+    font-size: 10px;
+    padding: 4px 9px;
+  }
+
+  .branch-code {
+    font-size: 10px;
+    padding: 3px 7px;
+  }
+
+  .info-label,
+  .info-val {
+    font-size: 12px;
+  }
+}
