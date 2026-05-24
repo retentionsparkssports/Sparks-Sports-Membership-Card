@@ -1,13 +1,16 @@
 // ============================================================
 // SPARKS MEMBERSHIP CARD - GITHUB PAGES VERSION
 // Method: GitHub Pages + Published Google Sheets CSV + PapaParse
-// No Apps Script needed
+// No Apps Script
 // ============================================================
 
-// GANTI URL DI BAWAH INI DENGAN LINK CSV GOOGLE SHEETS KAMU
+// WAJIB DIGANTI DENGAN LINK CSV GOOGLE SHEETS KAMU
 const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTosLyHAecGLxPdg4ULsnx11VimQuzvcjD6pCEiTJWPtrLY0ckPVHahmkax46woBS6MhCKK4Qntjy2O/pub?gid=0&single=true&output=csv";
 
-// Fallback proxy kalau direct CSV gagal karena CORS/network issue
+// Logo asli Sparks. Upload file logo ke root repository dengan nama logo.png
+const LOGO_URL = "logo.png";
+
+// Fallback proxy kalau direct CSV gagal
 const PROXY_CSV_URL = "https://api.allorigins.win/raw?url=" + encodeURIComponent(SHEET_CSV_URL);
 
 const app = document.getElementById("app");
@@ -15,6 +18,23 @@ const app = document.getElementById("app");
 let ALL_STUDENTS = [];
 let DATA_READY = false;
 let DATA_ERROR = "";
+
+// ============================================================
+// ICONS
+// ============================================================
+
+const ICON_PHONE = `
+  <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M22 16.92v2.2a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 3.4 2 2 0 0 1 4.11 1.2h2.2a2 2 0 0 1 2 1.72c.13.96.35 1.9.66 2.8a2 2 0 0 1-.45 2.1L7.6 8.75a16 16 0 0 0 7.65 7.65l.93-.93a2 2 0 0 1 2.1-.45c.9.31 1.84.53 2.8.66A2 2 0 0 1 22 16.92Z"/>
+  </svg>
+`;
+
+const ICON_SEARCH = `
+  <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="11" cy="11" r="7"></circle>
+    <path d="m20 20-3.5-3.5"></path>
+  </svg>
+`;
 
 // ============================================================
 // INIT
@@ -30,7 +50,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  renderLoadingPage("Mencari Data", "Kami sedang mengecek status membership si kecil.");
+  renderLoadingPage("Mencari data membership", "Mohon tunggu sebentar. Kami sedang mencocokkan nomor WhatsApp yang kamu masukkan.");
   await loadData();
 
   if (DATA_ERROR) {
@@ -60,7 +80,7 @@ async function loadData() {
   if (DATA_READY) return;
 
   if (!SHEET_CSV_URL || SHEET_CSV_URL.includes("PASTE_LINK_CSV")) {
-    DATA_ERROR = "Link Google Sheets CSV belum diisi di file script.js.";
+    DATA_ERROR = "Link database belum terhubung. Silakan hubungi tim Sparks untuk pengecekan.";
     return;
   }
 
@@ -74,7 +94,7 @@ async function loadData() {
       processRows(rows);
       DATA_READY = true;
     } catch (secondError) {
-      DATA_ERROR = "Data belum bisa dimuat. Pastikan Google Sheets sudah dipublish sebagai CSV dan link CSV di script.js sudah benar.";
+      DATA_ERROR = "Data membership belum bisa dimuat. Silakan coba beberapa saat lagi atau hubungi SAR untuk bantuan.";
       console.error("Direct CSV error:", firstError);
       console.error("Proxy CSV error:", secondError);
     }
@@ -105,20 +125,21 @@ function processRows(rows) {
   const headerIndex = findHeaderIndex(rows);
 
   if (headerIndex === -1) {
-    throw new Error("Header tidak ditemukan. Pastikan sheet memiliki kolom Branch, Student ID, Student Name, Phone Number, Parents Name, Retention X, dan Expiry Date.");
+    throw new Error("Header database tidak ditemukan.");
   }
 
   const headers = rows[headerIndex].map(h => normalizeHeader(h));
   const dataRows = rows.slice(headerIndex + 1);
 
   const col = {
-    branch: findColumn(headers, ["branch"], 0),
-    studentId: findColumn(headers, ["student id", "studentid", "sid"], 1),
-    studentName: findColumn(headers, ["student name", "nama siswa", "name"], 2),
-    phone: findColumn(headers, ["phone number", "phone", "nomor hp", "nomor whatsapp", "whatsapp"], 3),
-    parentsName: findColumn(headers, ["parents name", "parent name", "nama parent", "nama orang tua"], 4),
-    retentionX: findColumn(headers, ["retention x", "retention_x", "retention"], 5),
-    expiryDate: findColumn(headers, ["expiry date", "expired date", "membership berakhir", "end date"], 6)
+    branch: findColumn(headers, ["branch", "branch code", "kode branch"], 0),
+    center: findColumn(headers, ["center", "centre", "center name", "nama center", "nama centre", "branch name", "lokasi"], null),
+    studentId: findColumn(headers, ["student id", "studentid", "sid", "id siswa"], 1),
+    studentName: findColumn(headers, ["student name", "nama siswa", "name", "student"], 2),
+    phone: findColumn(headers, ["phone number", "phone", "nomor hp", "nomor whatsapp", "whatsapp", "no hp"], 3),
+    parentsName: findColumn(headers, ["parents name", "parent name", "nama parent", "nama orang tua", "parents", "mom name"], 4),
+    retentionX: findColumn(headers, ["retention x", "retention_x", "retention", "ret x"], 5),
+    expiryDate: findColumn(headers, ["expiry date", "expired date", "membership berakhir", "end date", "tanggal expired", "expired"], 6)
   };
 
   const parsed = [];
@@ -127,6 +148,7 @@ function processRows(rows) {
     if (!row || row.length < 3) continue;
 
     const branch = cleanCell(row[col.branch]);
+    const center = col.center !== null ? cleanCell(row[col.center]) : "";
     const studentId = cleanCell(row[col.studentId]);
     const studentName = cleanCell(row[col.studentName]);
     const phone = cleanCell(row[col.phone]);
@@ -139,6 +161,7 @@ function processRows(rows) {
 
     parsed.push({
       branch,
+      center: center || branch || "Center belum tersedia",
       studentId,
       studentName,
       phone,
@@ -158,7 +181,7 @@ function findHeaderIndex(rows) {
     const joined = rows[i].map(c => normalizeHeader(c)).join(" | ");
 
     const hasStudent = joined.includes("student") || joined.includes("siswa");
-    const hasPhone = joined.includes("phone") || joined.includes("whatsapp") || joined.includes("nomor");
+    const hasPhone = joined.includes("phone") || joined.includes("whatsapp") || joined.includes("nomor") || joined.includes("hp");
     const hasExpiry = joined.includes("expiry") || joined.includes("expired") || joined.includes("berakhir");
 
     if (hasStudent && hasPhone) return i;
@@ -186,6 +209,8 @@ function isBadRow(value) {
     "student id",
     "student name",
     "phone number",
+    "nomor hp",
+    "nomor whatsapp",
     "automated",
     "appscript",
     "#n/a",
@@ -230,41 +255,64 @@ function findByPhone(rawInput) {
 // PAGES
 // ============================================================
 
+function renderBrandLogo(size = "default") {
+  const imgClass = size === "small" ? "logo-img small" : "logo-img";
+
+  return `
+    <div class="logo-wrap">
+      <img
+        src="${LOGO_URL}"
+        class="${imgClass}"
+        alt="Sparks Sports Academy"
+        onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+      />
+      <div class="logo-fallback ${size === "small" ? "white" : ""}" style="display:none;">
+        Sparks <span class="star">★</span>
+      </div>
+    </div>
+  `;
+}
+
 function renderLandingPage() {
   document.body.className = "center-page";
 
   app.innerHTML = `
     <div class="card">
-      <div class="logo-green">Sparks <span class="logo-star">★</span></div>
+      ${renderBrandLogo()}
+
       <div class="logo-sub">Sports Academy</div>
       <div class="divider"></div>
 
-      <p class="headline">Cek Status Membership</p>
+      <p class="headline">Cek Status Membership Anak</p>
       <p class="sub">
-        Masukkan nomor WhatsApp yang terdaftar untuk melihat status langganan si kecil.
+        Masukkan nomor WhatsApp orang tua yang terdaftar untuk melihat status membership Sparks.
       </p>
 
       <label for="phone">Nomor WhatsApp</label>
 
-      <div class="input-row">
+      <div class="input-row has-icon">
+        <div class="field-icon">${ICON_PHONE}</div>
         <div class="prefix">+62</div>
         <input
           type="tel"
           id="phone"
-          placeholder="8xx xxxx xxxx"
+          placeholder="8111000549"
           inputmode="numeric"
           autocomplete="tel"
           maxlength="16"
         />
       </div>
 
-      <p class="hint">Tanpa angka 0 di depan. Contoh: 81234567890</p>
+      <p class="hint">Tanpa angka 0 di depan. Contoh: 8111000549</p>
 
-      <button id="btn" onclick="goToDashboard()">Cek Status →</button>
+      <button id="btn" onclick="goToDashboard()">Cek Status Membership →</button>
 
-      <p class="small-note">
-        Pastikan nomor yang dimasukkan sesuai dengan nomor WhatsApp yang terdaftar di Sparks.
-      </p>
+      <div class="helper-box">
+        <div class="helper-title">Butuh bantuan?</div>
+        <div class="helper-copy">
+          Jika nomor tidak ditemukan, pastikan nomor yang dimasukkan sama dengan nomor WhatsApp yang terdaftar di Sparks, atau hubungi SAR center kamu.
+        </div>
+      </div>
     </div>
   `;
 
@@ -284,8 +332,10 @@ function renderLoadingPage(title, subtitle) {
 
   app.innerHTML = `
     <div class="card">
-      <div class="logo-green">Sparks <span class="logo-star">★</span></div>
-      <div class="logo-sub">Sports Academy</div>
+      <div class="search-visual">${ICON_SEARCH}</div>
+
+      ${renderBrandLogo()}
+
       <div class="divider"></div>
 
       <p class="headline loading-dots">${escapeHtml(title)}</p>
@@ -299,22 +349,22 @@ function renderNotFoundPage(phone) {
 
   app.innerHTML = `
     <div class="card">
-      <div class="icon">🔍</div>
+      <div class="search-visual">${ICON_SEARCH}</div>
 
       <h2 class="headline">Nomor Tidak Ditemukan</h2>
 
-      <p class="error-text">Kami tidak menemukan data untuk nomor:</p>
+      <p class="error-text">Kami belum menemukan data membership untuk nomor:</p>
 
       <div class="phone-box">+${escapeHtml(normalizePhone(phone))}</div>
 
       <p class="error-text">
-        Pastikan nomor yang dimasukkan sesuai dengan nomor yang terdaftar di Sparks.
-        Jika masih belum ditemukan, hubungi SAR kamu ya.
+        Coba cek kembali angka yang dimasukkan. Jika nomor sudah benar tetapi data tetap tidak muncul,
+        silakan hubungi SAR center kamu untuk pengecekan data.
       </p>
 
       <br><br>
 
-      <a class="link-button" onclick="backToHome()">← Coba Lagi</a>
+      <a class="link-button" onclick="backToHome()">← Coba Nomor Lain</a>
     </div>
   `;
 }
@@ -329,6 +379,10 @@ function renderErrorPage(message) {
       <h2 class="headline">Data Belum Bisa Dimuat</h2>
 
       <p class="error-text">${escapeHtml(message)}</p>
+
+      <p class="error-text">
+        Silakan muat ulang halaman ini. Jika masih belum bisa, hubungi tim Sparks untuk pengecekan database.
+      </p>
 
       <br><br>
 
@@ -346,20 +400,32 @@ function renderDashboardPage(students) {
     : "Halo! 👋";
 
   const multiNote = students.length > 1
-    ? `<div class="multi-note">👤 ${students.length} anak terdaftar di nomor ini.</div>`
+    ? `<div class="multi-note">👤 ${students.length} anak terdaftar dengan nomor ini.</div>`
     : "";
 
   const cards = students.map(createStudentCard).join("");
 
   app.innerHTML = `
     <div class="topbar">
-      <div class="topbar-logo">Sparks ★ Sports Academy</div>
+      <div class="topbar-logo">
+        <div class="topbar-logo-inner">
+          <img
+            src="${LOGO_URL}"
+            class="logo-img small"
+            alt="Sparks Sports Academy"
+            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+          />
+          <div class="logo-fallback white" style="display:none;">
+            Sparks <span class="star">★</span> Sports Academy
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="wrap">
       <div class="greeting-card">
         <div class="greeting-text">${greeting}</div>
-        <div class="greeting-sub">Berikut status membership si kecil di Sparks.</div>
+        <div class="greeting-sub">Berikut status membership anak yang terdaftar di nomor WhatsApp ini.</div>
       </div>
 
       ${multiNote}
@@ -371,6 +437,9 @@ function renderDashboardPage(students) {
 }
 
 function createStudentCard(student) {
+  const centerText = student.center || student.branch || "Center belum tersedia";
+  const branchText = student.branch || "";
+
   return `
     <div class="student-card">
       <div class="card-top">
@@ -379,19 +448,27 @@ function createStudentCard(student) {
         <div class="card-info">
           <div class="student-name">${escapeHtml(student.studentName || "Nama belum tersedia")}</div>
           <div class="student-id">${escapeHtml(student.studentId || "")}</div>
-          <div class="branch-badge">${escapeHtml(student.branch || "Branch belum tersedia")}</div>
+          <div>
+            <span class="center-badge">${escapeHtml(centerText)}</span>
+            ${branchText && branchText !== centerText ? `<span class="branch-code">${escapeHtml(branchText)}</span>` : ""}
+          </div>
         </div>
       </div>
 
       ${createExpiryBanner(student.expiryDate)}
 
       <div class="info-row">
-        <span class="info-label">Nomor HP</span>
+        <span class="info-label">Center</span>
+        <span class="info-val">${escapeHtml(centerText)}</span>
+      </div>
+
+      <div class="info-row">
+        <span class="info-label">Nomor WhatsApp</span>
         <span class="info-val">+${escapeHtml(student.normalizedPhone || student.phone || "-")}</span>
       </div>
 
       <div class="info-row">
-        <span class="info-label">Parent</span>
+        <span class="info-label">Nama Orang Tua</span>
         <span class="info-val">${escapeHtml(student.parentsName || "-")}</span>
       </div>
     </div>
@@ -406,7 +483,7 @@ function createExpiryBanner(expiryStr) {
       <div class="expiry-box expiry-unknown">
         <div class="ex-label">Membership Berakhir</div>
         <div class="ex-date">Belum tersedia</div>
-        <div class="ex-msg">Hubungi SAR untuk konfirmasi status membership.</div>
+        <div class="ex-msg">Silakan hubungi SAR untuk konfirmasi status membership.</div>
       </div>
     `;
   }
@@ -420,19 +497,19 @@ function createExpiryBanner(expiryStr) {
   if (days < 0) {
     cls = "expiry-expired";
     daysText = `${Math.abs(days)} hari yang lalu`;
-    msg = "Yuk segera perpanjang agar tidak ketinggalan sesi!";
+    msg = "Membership perlu diperpanjang agar anak dapat terus mengikuti sesi Sparks.";
   } else if (days === 0) {
     cls = "expiry-urgent";
-    daysText = "Hari ini!";
-    msg = "Segera hubungi SAR untuk perpanjangan.";
+    daysText = "Berakhir hari ini";
+    msg = "Silakan hubungi SAR untuk membantu proses perpanjangan membership.";
   } else if (days <= 14) {
     cls = "expiry-urgent";
     daysText = `${days} hari lagi`;
-    msg = "Segera perpanjang agar membership tetap aktif.";
+    msg = "Membership akan segera berakhir. Hubungi SAR untuk perpanjangan.";
   } else if (days <= 30) {
     cls = "expiry-soon";
     daysText = `${days} hari lagi`;
-    msg = "Membership akan segera berakhir. Jangan lupa perpanjang ya!";
+    msg = "Membership masih aktif, namun sudah mendekati periode perpanjangan.";
   } else {
     cls = "expiry-active";
     daysText = `${days} hari lagi`;
@@ -460,12 +537,12 @@ function goToDashboard() {
   let raw = input.value.trim().replace(/[^0-9]/g, "");
 
   if (!raw) {
-    alert("Masukkan nomor WhatsApp kamu dulu ya.");
+    alert("Masukkan nomor WhatsApp terlebih dahulu.");
     return;
   }
 
   if (raw.length < 9) {
-    alert("Nomor terlalu pendek, coba lagi.");
+    alert("Nomor terlalu pendek");
     return;
   }
 
@@ -501,10 +578,19 @@ function normalizeHeader(value) {
 function normalizePhone(phone) {
   let p = cleanCell(phone).replace(/[\s\-\(\)\+\.]/g, "");
 
+  if (!p) return "";
+
+  // 081111000549 -> 628111000549
   if (p.startsWith("0")) {
     p = "62" + p.slice(1);
   }
 
+  // 81111000549 -> 628111000549
+  else if (p.startsWith("8")) {
+    p = "62" + p;
+  }
+
+  // 6208111000549 -> 628111000549
   if (p.startsWith("620")) {
     p = "62" + p.slice(3);
   }
@@ -583,7 +669,7 @@ function parseExpiryDate(value) {
       return new Date(year, b - 1, a);
     }
 
-    // Default Google Sheets CSV Indonesia sering tetap aman kalau berupa MM/DD/YYYY
+    // Default Google Sheets CSV biasanya MM/DD/YYYY kalau export dari serial date
     return new Date(year, a - 1, b);
   }
 
@@ -646,7 +732,7 @@ function getInitials(name) {
 
   if (!clean) return "?";
 
-  const parts = clean.split(/\s+/);
+  const parts = clean.split(/\s+/).filter(Boolean);
 
   if (parts.length === 1) {
     return parts[0][0].toUpperCase();
