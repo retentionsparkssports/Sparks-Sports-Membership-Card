@@ -5,7 +5,7 @@
 // ============================================================
 
 // WAJIB DIGANTI DENGAN LINK CSV GOOGLE SHEETS KAMU
-const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTosLyHAecGLxPdg4ULsnx11VimQuzvcjD6pCEiTJWPtrLY0ckPVHahmkax46woBS6MhCKK4Qntjy2O/pub?gid=0&single=true&output=csv";
+const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTosLyHAecGLxPdg4ULsnx11VimQuzvcjD6pCEiTJWPtrLY0ckPVHahmkax46woBS6MhCKK4Qntjy2O/pub?gid=2025872883&single=true&output=csv";
 
 // Logo asli Sparks. Upload file logo ke root repository dengan nama logo.png
 const LOGO_URL = "logo.png";
