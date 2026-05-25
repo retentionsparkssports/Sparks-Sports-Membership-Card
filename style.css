@@ -677,3 +677,17 @@ button:disabled {
     font-size: 12px;
   }
 }
+.student-card {
+  background: var(--white);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.07);
+  margin-bottom: 16px;
+}
+
+.expiry-box {
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 0;
+  text-align: left;
+}
