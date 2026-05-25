@@ -393,9 +393,11 @@ function renderErrorPage(message) {
 function renderDashboardPage(students) {
   document.body.className = "dashboard-page";
 
-  const parentsName = students[0]?.parentsName || "";
-  const greeting = parentsName
-    ? `Halo, ${escapeHtml(parentsName)}! 👋`
+  const parentsNameRaw = students[0]?.parentsName || "";
+  const formattedParentName = formatGreetingParentName(parentsNameRaw);
+
+  const greeting = formattedParentName
+    ? `Halo, ${escapeHtml(formattedParentName)}! 👋`
     : "Halo! 👋";
 
   const multiNote = students.length > 1
@@ -424,7 +426,7 @@ function renderDashboardPage(students) {
     <div class="wrap">
       <div class="greeting-card">
         <div class="greeting-text">${greeting}</div>
-        <div class="greeting-sub">Berikut status membership anak yang terdaftar di nomor WhatsApp ini.</div>
+        <div class="greeting-sub">Yuk cek status membership si kecil di Sparks.</div>
       </div>
 
       ${multiNote}
@@ -437,7 +439,6 @@ function renderDashboardPage(students) {
 
 function createStudentCard(student) {
   const centerText = student.center || student.branch || "Center belum tersedia";
-  const branchText = student.branch || "";
 
   return `
     <div class="student-card">
@@ -449,31 +450,14 @@ function createStudentCard(student) {
           <div class="student-id">${escapeHtml(student.studentId || "")}</div>
           <div>
             <span class="center-badge">${escapeHtml(centerText)}</span>
-            ${branchText && branchText !== centerText ? `<span class="branch-code">${escapeHtml(branchText)}</span>` : ""}
           </div>
         </div>
       </div>
 
       ${createExpiryBanner(student.expiryDate)}
-
-      <div class="info-row">
-        <span class="info-label">Center</span>
-        <span class="info-val">${escapeHtml(centerText)}</span>
-      </div>
-
-      <div class="info-row">
-        <span class="info-label">Nomor WhatsApp</span>
-        <span class="info-val">+${escapeHtml(student.normalizedPhone || student.phone || "-")}</span>
-      </div>
-
-      <div class="info-row">
-        <span class="info-label">Nama Orang Tua</span>
-        <span class="info-val">${escapeHtml(student.parentsName || "-")}</span>
-      </div>
     </div>
   `;
 }
-
 function createExpiryBanner(expiryStr) {
   const date = parseExpiryDate(expiryStr);
 
@@ -482,7 +466,7 @@ function createExpiryBanner(expiryStr) {
       <div class="expiry-box expiry-unknown">
         <div class="ex-label">Membership Berakhir</div>
         <div class="ex-date">Belum tersedia</div>
-        <div class="ex-msg">Silakan hubungi SAR untuk konfirmasi status membership.</div>
+        <div class="ex-msg">Status membership belum tersedia. Yuk hubungi SAR untuk bantu cek ya.</div>
       </div>
     `;
   }
@@ -496,23 +480,23 @@ function createExpiryBanner(expiryStr) {
   if (days < 0) {
     cls = "expiry-expired";
     daysText = `${Math.abs(days)} hari yang lalu`;
-    msg = "Membership perlu diperpanjang agar anak dapat terus mengikuti sesi Sparks.";
+    msg = "Yah, membership si kecil sudah habis. Yuk perpanjang sekarang supaya tetap bisa lanjut seru-seruan di Sparks!";
   } else if (days === 0) {
     cls = "expiry-urgent";
     daysText = "Berakhir hari ini";
-    msg = "Silakan hubungi SAR untuk membantu proses perpanjangan membership.";
+    msg = "Duh, membership si kecil berakhir hari ini nih. Yuk segera perpanjang supaya tetap aktif!";
   } else if (days <= 14) {
     cls = "expiry-urgent";
     daysText = `${days} hari lagi`;
-    msg = "Membership akan segera berakhir. Hubungi SAR untuk perpanjangan.";
+    msg = "Duh, membership si kecil sudah mendekati masa berakhir nih. Yuk segera perpanjang ya!";
   } else if (days <= 30) {
     cls = "expiry-soon";
     daysText = `${days} hari lagi`;
-    msg = "Membership masih aktif, namun sudah mendekati periode perpanjangan.";
+    msg = "Duh, membership si kecil sudah mendekati waktu expired. Yuk mulai perpanjang dari sekarang ya.";
   } else {
     cls = "expiry-active";
     daysText = `${days} hari lagi`;
-    msg = "Membership masih aktif.";
+    msg = "Yeay, membership si kecil masih aktif! Tinggal lanjut latihan dan have fun bareng Sparks!";
   }
 
   return `
@@ -560,7 +544,32 @@ function backToHome() {
 // ============================================================
 // HELPERS
 // ============================================================
+function formatGreetingParentName(name) {
+  const clean = cleanCell(name);
 
+  if (!clean) return "";
+
+  const lower = clean.toLowerCase();
+
+  // Kalau sudah ada panggilan, jangan ditambah lagi
+  const alreadyHasParentTitle =
+    lower.startsWith("mom") ||
+    lower.startsWith("dad") ||
+    lower.startsWith("mama") ||
+    lower.startsWith("papa") ||
+    lower.startsWith("bunda") ||
+    lower.startsWith("ayah") ||
+    lower.startsWith("ibu") ||
+    lower.startsWith("mr") ||
+    lower.startsWith("mrs");
+
+  if (alreadyHasParentTitle) {
+    return clean;
+  }
+
+  // Kalau belum ada, tambahkan prefix netral
+  return `Mom/Dad ${clean}`;
+}
 function cleanCell(value) {
   if (value === null || value === undefined) return "";
   return String(value).trim();
