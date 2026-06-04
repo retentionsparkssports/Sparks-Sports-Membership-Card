@@ -80,7 +80,7 @@ async function loadData() {
   if (DATA_READY) return;
 
   if (!SHEET_CSV_URL || SHEET_CSV_URL.includes("PASTE_LINK_CSV")) {
-    DATA_ERROR = "Link database belum terhubung. Silakan hubungi tim Sparks untuk pengecekan.";
+    DATA_ERROR = "Link database belum terhubung. Silakan hubungi Student Advisor Retention center kamu untuk pengecekan.";
     return;
   }
 
