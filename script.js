@@ -309,7 +309,7 @@ function renderLandingPage() {
       <div class="helper-box">
         <div class="helper-title">Butuh bantuan?</div>
         <div class="helper-copy">
-          Jika nomor tidak ditemukan, pastikan nomor yang dimasukkan sama dengan nomor WhatsApp yang terdaftar di Sparks, atau hubungi SAR center kamu.
+          Jika nomor tidak ditemukan, pastikan nomor yang dimasukkan sama dengan nomor WhatsApp yang terdaftar di Sparks, atau SAR Student Advisor Retention center kamu.
         </div>
       </div>
     </div>
@@ -358,7 +358,7 @@ function renderNotFoundPage(phone) {
 
       <p class="error-text">
         Coba cek kembali angka yang dimasukkan. Jika nomor sudah benar tetapi data tetap tidak muncul,
-        silakan hubungi SAR center kamu untuk pengecekan data.
+        silakan hubungi Student Advisor Retention center kamu untuk pengecekan data.
       </p>
 
       <br><br>
@@ -380,7 +380,7 @@ function renderErrorPage(message) {
       <p class="error-text">${escapeHtml(message)}</p>
 
       <p class="error-text">
-        Silakan muat ulang halaman ini. Jika masih belum bisa, hubungi tim Sparks untuk pengecekan database.
+        Silakan muat ulang halaman ini. Jika masih belum bisa, hubungi Student Advisor Retention center kamu untuk pengecekan database.
       </p>
 
       <br><br>
