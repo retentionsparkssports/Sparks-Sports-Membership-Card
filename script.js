@@ -94,7 +94,7 @@ async function loadData() {
       processRows(rows);
       DATA_READY = true;
     } catch (secondError) {
-      DATA_ERROR = "Data membership belum bisa dimuat. Silakan coba beberapa saat lagi atau hubungi SAR untuk bantuan.";
+      DATA_ERROR = "Data membership belum bisa dimuat. Silakan coba beberapa saat lagi atau hubungi Student Advisor Retention untuk bantuan.";
       console.error("Direct CSV error:", firstError);
       console.error("Proxy CSV error:", secondError);
     }
