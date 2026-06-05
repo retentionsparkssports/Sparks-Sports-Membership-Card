@@ -2,9 +2,14 @@
 // SPARKS MEMBERSHIP CARD - GITHUB PAGES VERSION
 // ============================================================
 
-const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTosLyHAecGLxPdg4ULsnx11VimQuzvcjD6pCEiTJWPtrLY0ckPVHahmkax46woBS6MhCKK4Qntjy2O/pub?gid=2025872883&single=true&output=csv";
-const ATTENDANCE_CSV_URL = "PASTE_ATTENDANCE_CSV_LINK_HERE";
-const BACKUP_CSV_URL = "PASTE_MEMBERSHIP_BACKUP_CSV_LINK_HERE";
+// LP1 & LP2 — Membership Dashboard Backup
+const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTosLyHAecGLxPdg4ULsnx11VimQuzvcjD6pCEiTJWPtrLY0ckPVHahmkax46woBS6MhCKK4Qntjy2O/pub?gid=GANTI_GID_BACKUP&single=true&output=csv";
+
+// LP3 — Compiled Attendance
+const ATTENDANCE_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTosLyHAecGLxPdg4ULsnx11VimQuzvcjD6pCEiTJWPtrLY0ckPVHahmkax46woBS6MhCKK4Qntjy2O/pub?gid=GANTI_GID_ATTENDANCE&single=true&output=csv";
+
+// Backup tidak dipakai terpisah — hapus atau samakan dengan SHEET_CSV_URL
+const BACKUP_CSV_URL = SHEET_CSV_URL;
 
 const LOGO_URL = "logo.png";
 const PROXY_PREFIX = "https://api.allorigins.win/raw?url=";
