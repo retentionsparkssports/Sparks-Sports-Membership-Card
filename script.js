@@ -457,8 +457,8 @@ function renderDetailPage(student, attendance, waLink, sarName, phone) {
   });
   const classKeys = Object.keys(classMap);
   const tabsHtml  = [
-    `<button class="class-tab active" onclick="lp3Switch(event,'__all__')">Semua</button>`,
-    ...classKeys.map(k => `<button class="class-tab" onclick="lp3Switch(event,${JSON.stringify(k)})">${escapeHtml(k)}</button>`)
+    `<button class="class-tab active" data-key="__all__">Semua</button>`,
+    ...classKeys.map(k => `<button class="class-tab" data-key="${escapeHtml(k)}">${escapeHtml(k)}</button>`)
   ].join("");
 
   app.innerHTML = `
@@ -487,7 +487,6 @@ function renderDetailPage(student, attendance, waLink, sarName, phone) {
 
       <div class="term-label">
         <span class="term-badge">📅 Summer Term 2026</span>
-        <span class="term-note">Filter per term — coming soon</span>
       </div>
 
       <div class="class-tabs-wrap">${tabsHtml}</div>
@@ -520,13 +519,18 @@ function renderDetailPage(student, attendance, waLink, sarName, phone) {
   // Store for tab switching — use pre-grouped classMap
   window._lp3All      = attendance;
   window._lp3ClassMap = classMap;
-  lp3Render("__all__");
-}
 
-function lp3Switch(event, key) {
-  document.querySelectorAll(".class-tab").forEach(t => t.classList.remove("active"));
-  event.currentTarget.classList.add("active");
-  lp3Render(key);
+  // Attach tab click events after DOM is fully rendered
+  setTimeout(function() {
+    document.querySelectorAll(".class-tab").forEach(function(btn) {
+      btn.addEventListener("click", function () {
+        document.querySelectorAll(".class-tab").forEach(function(t) { t.classList.remove("active"); });
+        this.classList.add("active");
+        lp3Render(this.getAttribute("data-key"));
+      });
+    });
+    lp3Render("__all__");
+  }, 0);
 }
 
 function lp3Render(key) {
