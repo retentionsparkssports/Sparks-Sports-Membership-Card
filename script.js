@@ -3,10 +3,8 @@
 // ============================================================
 
 const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTosLyHAecGLxPdg4ULsnx11VimQuzvcjD6pCEiTJWPtrLY0ckPVHahmkax46woBS6MhCKK4Qntjy2O/pub?gid=2025872883&single=true&output=csv";
-
-const ATTENDANCE_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTosLyHAecGLxPdg4ULsnx11VimQuzvcjD6pCEiTJWPtrLY0ckPVHahmkax46woBS6MhCKK4Qntjy2O/pub?gid=602531638&single=true&output=csv";
-
-const BACKUP_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTosLyHAecGLxPdg4ULsnx11VimQuzvcjD6pCEiTJWPtrLY0ckPVHahmkax46woBS6MhCKK4Qntjy2O/pub?gid=2025872883&single=true&output=csv";
+const ATTENDANCE_CSV_URL = "PASTE_ATTENDANCE_CSV_LINK_HERE";
+const BACKUP_CSV_URL = "PASTE_MEMBERSHIP_BACKUP_CSV_LINK_HERE";
 
 const LOGO_URL = "logo.png";
 const PROXY_PREFIX = "https://api.allorigins.win/raw?url=";
@@ -400,38 +398,28 @@ function createStudentCard(student, phone) {
 function renderDetailPage(student, attendance, waLink, sarName, phone) {
   document.body.className = "dashboard-page";
   const centerText = student.center || student.branch || "Center belum tersedia";
+  const ph = encodeURIComponent(phone || "");
 
-  // Metrics
-  const totalHadir   = attendance.filter(r => r.status.toLowerCase() === "present").length;
-  const totalSessions= attendance.filter(r => r.type === "Regular").length;
-  const izinUsed     = attendance.filter(r => /make up/i.test(r.makeupReason) && /izin/i.test(r.makeupReason)).length;
-  const izinQuota    = 2;
-  const izinSisa     = Math.max(0, izinQuota - izinUsed);
-
-  // WA section
   const waTarget = waLink || TELESALES_WA;
   const waLabel  = waLink
     ? (sarName ? `Hubungi Student Advisor Retention (${escapeHtml(sarName)})` : "Hubungi Student Advisor Retention")
     : `Hubungi ${TELESALES_LABEL}`;
 
-  // Attendance table rows
-  const tableRows = attendance.length
-    ? attendance.map(r => {
-        const classShort = simplifyClassName(r.class_);
-        const { badge, dot } = getStatusBadge(r.status, r.makeupReason);
-        const reasonTag = r.makeupReason && r.makeupReason !== "Regular Class" && r.makeupReason !== ""
-          ? `<span class="reason-tag">${escapeHtml(r.makeupReason)}</span>`
-          : "";
-        return `
-          <tr>
-            <td><span class="att-dot-inline ${dot}"></span>${escapeHtml(r.date)}</td>
-            <td>${escapeHtml(classShort)}${reasonTag}</td>
-            <td><span class="att-badge ${badge}">${escapeHtml(r.status)}</span></td>
-          </tr>`;
-      }).join("")
-    : `<tr><td colspan="3" class="att-empty">Belum ada data attendance untuk periode ini.</td></tr>`;
+  // Extract unique class names from attendance for tabs
+  // Use simplifyClassName to get short label, store original for filter
+  const classMap = {};  // short label → original class_ values that map to it
+  attendance.forEach(r => {
+    const short = getClassLabel(r.class_);
+    if (!classMap[short]) classMap[short] = new Set();
+    classMap[short].add(r.class_);
+  });
+  const classKeys = Object.keys(classMap);  // unique short class labels
 
-  const ph = encodeURIComponent(phone || "");
+  // Build tabs HTML — "Semua" always first, then per class
+  const tabsHtml = [
+    `<button class="class-tab active" onclick="lp3SwitchClass(event, '__all__')">Semua</button>`,
+    ...classKeys.map(k => `<button class="class-tab" onclick="lp3SwitchClass(event, ${JSON.stringify(k)})">${escapeHtml(k)}</button>`)
+  ].join("");
 
   app.innerHTML = `
     <div class="topbar topbar-detail">
@@ -460,24 +448,15 @@ function renderDetailPage(student, attendance, waLink, sarName, phone) {
         ${createExpiryBanner(student.expiryDate)}
       </div>
 
-      <div class="metrics-row">
-        <div class="metric-card">
-          <div class="metric-icon metric-green">✓</div>
-          <div class="metric-val">${totalHadir}<span class="metric-unit"> sesi</span></div>
-          <div class="metric-lbl">Total hadir</div>
-          <div class="metric-sub">dari ${totalSessions} sesi periode ini</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-icon metric-purple">↺</div>
-          <div class="metric-val">${izinUsed}<span class="metric-unit"> / ${izinQuota}</span></div>
-          <div class="metric-lbl">Kuota make up (izin)</div>
-          <div class="metric-sub">${izinSisa === 0 ? "Kuota habis" : `Sisa ${izinSisa}x kuota`}</div>
-        </div>
+      <div class="class-tabs-wrap">
+        ${tabsHtml}
       </div>
+
+      <div class="metrics-row" id="lp3-metrics"></div>
 
       <div class="att-card">
         <div class="att-header">
-          <div class="att-title">Riwayat Kehadiran</div>
+          <div class="att-title" id="lp3-att-title">Riwayat Kehadiran</div>
           <div class="att-period">Periode ini</div>
         </div>
         <div class="att-legend">
@@ -488,14 +467,8 @@ function renderDetailPage(student, attendance, waLink, sarName, phone) {
         </div>
         <div class="att-table-wrap">
           <table class="att-table">
-            <thead>
-              <tr>
-                <th>Tanggal</th>
-                <th>Kelas</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>${tableRows}</tbody>
+            <thead><tr><th>Tanggal</th><th>Kelas</th><th>Status</th></tr></thead>
+            <tbody id="lp3-tbody"></tbody>
           </table>
         </div>
       </div>
@@ -503,10 +476,102 @@ function renderDetailPage(student, attendance, waLink, sarName, phone) {
       <a class="wa-help-btn wa-help-btn--full" href="${waTarget}" target="_blank">
         ${ICON_WA} ${waLabel}
       </a>
-
       <a class="back-link" href="?phone=${ph}">← Kembali ke daftar anak</a>
     </div>
   `;
+
+  // Store attendance on window for tab switching
+  window._lp3Attendance = attendance;
+  window._lp3ClassMap   = classMap;
+
+  // Render initial state — all classes
+  lp3RenderTab("__all__");
+}
+
+function lp3SwitchClass(event, classKey) {
+  document.querySelectorAll(".class-tab").forEach(t => t.classList.remove("active"));
+  event.currentTarget.classList.add("active");
+  lp3RenderTab(classKey);
+}
+
+function lp3RenderTab(classKey) {
+  const all = window._lp3Attendance || [];
+  const classMap = window._lp3ClassMap || {};
+
+  // Filter attendance rows for this tab
+  const rows = classKey === "__all__"
+    ? all
+    : all.filter(r => getClassLabel(r.class_) === classKey);
+
+  // Metrics
+  const totalHadir   = rows.filter(r => r.status.toLowerCase() === "present").length;
+  const totalSessions = rows.filter(r => r.type === "Regular").length;
+  const izinUsed     = rows.filter(r => /izin/i.test(r.makeupReason)).length;
+  const izinSisa     = Math.max(0, 2 - izinUsed);
+
+  // Metric cards — 2 only: total hadir + kuota tersisa
+  const metricHadir = `
+    <div class="metric-card">
+      <div class="metric-icon metric-green">✓</div>
+      <div class="metric-val">${totalHadir}<span class="metric-unit"> sesi</span></div>
+      <div class="metric-lbl">Total hadir</div>
+      <div class="metric-sub">dari ${totalSessions} sesi periode ini</div>
+    </div>`;
+
+  const metricMakeup = izinSisa === 0
+    ? `<div class="metric-card metric-card--warn">
+        <div class="metric-icon metric-red">✕</div>
+        <div class="metric-val">0<span class="metric-unit"> tersisa</span></div>
+        <div class="metric-lbl">Kuota make up habis</div>
+        <div class="metric-sub">Izin tidak bisa di-make up lagi</div>
+      </div>`
+    : `<div class="metric-card">
+        <div class="metric-icon metric-purple">↺</div>
+        <div class="metric-val">${izinSisa}<span class="metric-unit"> tersisa</span></div>
+        <div class="metric-lbl">Kuota make up tersisa</div>
+        <div class="metric-sub">dari 2 kuota per periode</div>
+      </div>`;
+
+  document.getElementById("lp3-metrics").innerHTML = metricHadir + metricMakeup;
+
+  // Update table title
+  const titleEl = document.getElementById("lp3-att-title");
+  if (titleEl) {
+    titleEl.textContent = classKey === "__all__"
+      ? "Riwayat Kehadiran"
+      : `Riwayat Kehadiran · ${classKey}`;
+  }
+
+  // Table rows
+  const tbody = document.getElementById("lp3-tbody");
+  if (!tbody) return;
+
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="3" class="att-empty">Belum ada data attendance untuk periode ini.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r => {
+    const classShort = simplifyClassName(r.class_);
+    const { badge, dot } = getStatusBadge(r.status, r.makeupReason);
+    const reasonTag = r.makeupReason && r.makeupReason !== "Regular Class" && r.makeupReason !== ""
+      ? `<span class="reason-tag">${escapeHtml(r.makeupReason)}</span>`
+      : "";
+    return `<tr>
+      <td><span class="att-dot-inline ${dot}"></span>${escapeHtml(r.date)}</td>
+      <td>${escapeHtml(classShort)}${reasonTag}</td>
+      <td><span class="att-badge ${badge}">${escapeHtml(r.status)}</span></td>
+    </tr>`;
+  }).join("");
+}
+
+// Get short class label from raw class_ string for tab grouping
+// Format: "CENTER | AgeGroup | Sport | Day | Time | Room" → "Sport"
+function getClassLabel(raw) {
+  if (!raw) return "Kelas";
+  const parts = raw.split("|").map(p => p.trim());
+  if (parts.length >= 3) return parts[2];
+  return raw;
 }
 
 // ============================================================
