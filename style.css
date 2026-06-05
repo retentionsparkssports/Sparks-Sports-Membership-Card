@@ -918,3 +918,49 @@ button:disabled {
 }
 
 .detail-btn:hover { background: #d0f0e4; transform: translateY(-1px); }
+
+.class-tabs-wrap {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.class-tab {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1.5px solid var(--border);
+  background: var(--white);
+  color: var(--muted);
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.class-tab.active {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+}
+
+.class-tab:hover:not(.active) {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.metric-card--warn .metric-val {
+  color: var(--red);
+}
+
+.metric-red {
+  background: var(--red-bg);
+  color: var(--red);
+}
