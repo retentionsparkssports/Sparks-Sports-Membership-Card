@@ -944,3 +944,26 @@ button:disabled {
 }
 
 .detail-btn:hover { background: #d0f0e4; transform: translateY(-1px); }
+
+.term-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding: 10px 14px;
+  background: var(--white);
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.term-badge {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.term-note {
+  font-size: 10px;
+  color: var(--soft-muted);
+  font-style: italic;
+}
