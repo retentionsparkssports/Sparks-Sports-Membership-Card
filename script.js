@@ -9,7 +9,7 @@ const BACKUP_CSV_URL = "PASTE_MEMBERSHIP_BACKUP_CSV_LINK_HERE";
 const LOGO_URL = "logo.png";
 const PROXY_PREFIX = "https://api.allorigins.win/raw?url=";
 const TELESALES_WA = "https://wa.me/6281390006606";
-const TELESALES_LABEL = "Tim Telesales Sparks Sports";
+const TELESALES_LABEL = "Tim Customer Support Sparks Sports";
 
 const app = document.getElementById("app");
 
@@ -282,11 +282,7 @@ function renderLandingPage() {
       </div>
       <p class="hint">Tanpa angka 0 di depan. Contoh: 8111000549</p>
       <button id="btn" onclick="goToDashboard()">Cek Status Membership →</button>
-      <a class="wa-help-btn" href="${TELESALES_WA}" target="_blank">
-        ${ICON_WA}
-        Butuh bantuan? Hubungi Student Advisor Retention
-      </a>
-      <p class="small-note">Atau hubungi <a href="${TELESALES_WA}" target="_blank" style="color:var(--green);font-weight:700;">Tim Telesales Sparks Sports</a> untuk pengecekan data membership.</p>
+      <p class="small-note">Butuh bantuan? Hubungi <a href="${TELESALES_WA}" target="_blank" style="color:var(--green);font-weight:700;">Tim Customer Support Sparks Sports</a> untuk pengecekan data membership.</p>
     </div>
   `;
   const phoneInput = document.getElementById("phone");
@@ -319,7 +315,7 @@ function renderNotFoundPage(phone) {
       <div class="phone-box">+${escapeHtml(normalizePhone(phone))}</div>
       <p class="error-text">Coba cek kembali angka yang dimasukkan. Jika nomor sudah benar tetapi data tetap tidak muncul, silakan hubungi Student Advisor Retention center kamu untuk pengecekan data.</p>
       <br>
-      <a class="wa-help-btn" href="${TELESALES_WA}" target="_blank">${ICON_WA} Hubungi Student Advisor Retention</a>
+      <a class="wa-help-btn" href="${TELESALES_WA}" target="_blank">${ICON_WA} Hubungi Tim Customer Support Sparks Sports</a>
       <br><br>
       <a class="link-button" onclick="backToHome()">← Coba Nomor Lain</a>
     </div>
