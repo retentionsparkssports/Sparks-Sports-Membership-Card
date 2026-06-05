@@ -267,8 +267,23 @@ function findByPhone(rawInput) {
   const byStudent = {};
   matched.forEach(s => {
     if (!s.studentId) return;
-    if (!byStudent[s.studentId] || s.retentionX > byStudent[s.studentId].retentionX)
+    const existing = byStudent[s.studentId];
+    if (!existing) {
       byStudent[s.studentId] = s;
+      return;
+    }
+    // Primary sort: higher retentionX wins
+    if (s.retentionX > existing.retentionX) {
+      byStudent[s.studentId] = s;
+      return;
+    }
+    // Tiebreaker: if retentionX is equal, pick the one with later expiry date
+    if (s.retentionX === existing.retentionX) {
+      const dNew = parseExpiryDate(s.expiryDateRaw);
+      const dOld = parseExpiryDate(existing.expiryDateRaw);
+      if (dNew && dOld && dNew > dOld) byStudent[s.studentId] = s;
+      else if (dNew && !dOld)          byStudent[s.studentId] = s;
+    }
   });
   return Object.values(byStudent).sort((a, b) => String(a.studentId).localeCompare(String(b.studentId)));
 }
