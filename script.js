@@ -448,15 +448,15 @@ function renderDetailPage(student, attendance, waLink, sarName, phone) {
     ? (sarName ? `Hubungi Student Advisor Retention (${escapeHtml(sarName)})` : "Hubungi Student Advisor Retention")
     : `Hubungi ${SUPPORT_LABEL}`;
 
-  // Build class tabs dynamically from attendance data
+  // Build class map — group attendance rows by class label
   const classMap = {};
   attendance.forEach(r => {
     const label = getClassLabel(r.class_);
     if (!classMap[label]) classMap[label] = [];
     classMap[label].push(r);
   });
-  const classKeys  = Object.keys(classMap);
-  const tabsHtml   = [
+  const classKeys = Object.keys(classMap);
+  const tabsHtml  = [
     `<button class="class-tab active" onclick="lp3Switch(event,'__all__')">Semua</button>`,
     ...classKeys.map(k => `<button class="class-tab" onclick="lp3Switch(event,${JSON.stringify(k)})">${escapeHtml(k)}</button>`)
   ].join("");
@@ -485,13 +485,18 @@ function renderDetailPage(student, attendance, waLink, sarName, phone) {
         ${createExpiryBanner(student.expiryDate)}
       </div>
 
+      <div class="term-label">
+        <span class="term-badge">📅 Summer Term 2026</span>
+        <span class="term-note">Filter per term — coming soon</span>
+      </div>
+
       <div class="class-tabs-wrap">${tabsHtml}</div>
       <div class="metrics-row" id="lp3-metrics"></div>
 
       <div class="att-card">
         <div class="att-header">
           <div class="att-title" id="lp3-att-title">Riwayat Kehadiran</div>
-          <div class="att-period">Periode ini</div>
+          <div class="att-period">Summer Term 2026</div>
         </div>
         <div class="att-legend">
           <span class="leg-item"><span class="att-dot-inline dot-present"></span>Hadir</span>
@@ -512,7 +517,7 @@ function renderDetailPage(student, attendance, waLink, sarName, phone) {
     </div>
   `;
 
-  // Store for tab switching
+  // Store for tab switching — use pre-grouped classMap
   window._lp3All      = attendance;
   window._lp3ClassMap = classMap;
   lp3Render("__all__");
@@ -527,6 +532,7 @@ function lp3Switch(event, key) {
 function lp3Render(key) {
   const all      = window._lp3All || [];
   const classMap = window._lp3ClassMap || {};
+  // Use pre-grouped rows from classMap — do NOT re-filter from ALL_ATTENDANCE
   const rows     = key === "__all__" ? all : (classMap[key] || []);
 
   // Metrics
