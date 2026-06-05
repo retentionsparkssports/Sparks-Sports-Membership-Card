@@ -948,7 +948,6 @@ button:disabled {
 .term-label {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   margin-bottom: 10px;
   padding: 10px 14px;
   background: var(--white);
@@ -960,10 +959,4 @@ button:disabled {
   font-size: 13px;
   font-weight: 800;
   color: var(--text);
-}
-
-.term-note {
-  font-size: 10px;
-  color: var(--soft-muted);
-  font-style: italic;
 }
