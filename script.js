@@ -41,7 +41,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderLoadingPage("Memuat detail attendance", "Mohon tunggu sebentar.");
     await loadData();
     if (DATA_ERROR) { renderErrorPage(DATA_ERROR); return; }
-    const student = ALL_STUDENTS.find(s => s.studentId === studentId) || null;
+    // Find student with matching sid — pick row with highest retentionX, tiebreak by latest expiry
+    const candidates = ALL_STUDENTS.filter(s => s.studentId === studentId);
+    const student = candidates.reduce((best, s) => {
+      if (!best) return s;
+      if (s.retentionX > best.retentionX) return s;
+      if (s.retentionX === best.retentionX) {
+        const dNew = parseExpiryDate(s.expiryDateRaw);
+        const dOld = parseExpiryDate(best.expiryDateRaw);
+        if (dNew && dOld && dNew > dOld) return s;
+        if (dNew && !dOld) return s;
+      }
+      return best;
+    }, null);
     if (!student) { renderNotFoundPage(phone || studentId); return; }
     const attendance = getAttendanceById(studentId);
     const waLink     = getWaLinkById(studentId);
