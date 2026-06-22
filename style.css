@@ -762,7 +762,7 @@ button:disabled {
 
 .metrics-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 10px;
   margin-bottom: 14px;
 }
@@ -774,28 +774,7 @@ button:disabled {
   box-shadow: 0 2px 16px rgba(0,0,0,0.06);
 }
 
-.metric-icon {
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  font-weight: 800;
-  margin-bottom: 8px;
-}
-
-.metric-green  { background: var(--green-bg); color: var(--green); }
-.metric-purple { background: #EEEDFE; color: #534AB7; }
-.metric-red    { background: var(--red-bg); color: var(--red); }
-
-.metric-val  { font-size: 26px; font-weight: 800; color: var(--text); line-height: 1; margin-bottom: 4px; }
-.metric-unit { font-size: 14px; font-weight: 600; color: var(--muted); }
-.metric-lbl  { font-size: 11px; color: var(--muted); line-height: 1.3; margin-bottom: 2px; }
-.metric-sub  { font-size: 10px; color: var(--soft-muted); }
-
-.metric-card--warn .metric-val { color: var(--red); }
+/* legacy single-metric classes removed — replaced by .metric-stat */
 
 .att-card {
   background: var(--white);
@@ -959,4 +938,106 @@ button:disabled {
   font-size: 13px;
   font-weight: 800;
   color: var(--text);
+}
+
+/* ============================================================
+   MOVING CLASS — OLD CLASS TAB & METRIC STYLES
+============================================================ */
+
+/* Old class tab: greyed out / desaturated, still clickable */
+.class-tab--old {
+  color: #aaa;
+  border-color: #e0e0e0;
+  background: #fafafa;
+  opacity: 0.7;
+}
+
+.class-tab--old:hover:not(.active) {
+  border-color: #bbb;
+  color: #888;
+  opacity: 1;
+}
+
+.class-tab--old.active {
+  background: #888;
+  border-color: #888;
+  color: #fff;
+  opacity: 1;
+}
+
+/* Badge inside old-class tab */
+.old-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  background: #efefef;
+  color: #888;
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-left: 4px;
+  vertical-align: middle;
+  letter-spacing: 0;
+}
+
+.class-tab--old.active .old-badge {
+  background: rgba(255,255,255,0.25);
+  color: rgba(255,255,255,0.85);
+}
+
+/* Metric card for old class tab */
+.metric-card--old {
+  opacity: 0.65;
+  filter: grayscale(0.8);
+}
+
+/* Metric icon: gray variant */
+.metric-icon.metric-gray {
+  background: #f0f0f0;
+  color: #999;
+}
+
+/* Single metric card — horizontal layout */
+.metric-card {
+  display: flex;
+  align-items: stretch;
+  background: #fff;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  padding: 0;
+}
+
+.metric-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 6px;
+  gap: 4px;
+}
+
+.metric-stat-divider {
+  width: 1px;
+  background: #f0f0f0;
+  align-self: stretch;
+  flex-shrink: 0;
+}
+
+.metric-stat-num {
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.metric-stat-num.green  { color: #2db87a; }
+.metric-stat-num.red    { color: #E24B4A; }
+.metric-stat-num.purple { color: #7F77DD; }
+
+.metric-stat-lbl {
+  font-size: 9px;
+  font-weight: 700;
+  color: #aaa;
+  text-align: center;
+  line-height: 1.3;
 }
