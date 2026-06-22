@@ -136,7 +136,7 @@ function processRetentionRows(rows) {
 
   const col = {
     branch:      findColumn(headers, ["branch", "branch code"], 0),
-    center:      findColumn(headers, ["center", "centre", "center name", "nama center", "branch name"], null),
+    center:      findColumn(headers, ["center name", "center", "centre", "nama center", "branch name"], 7),
     studentId:   findColumn(headers, ["student id", "studentid", "sid"], 1),
     studentName: findColumn(headers, ["student name", "nama siswa", "name"], 2),
     phone:       findColumn(headers, ["phone number", "phone", "nomor hp", "nomor whatsapp", "whatsapp", "no hp"], 3),
@@ -206,6 +206,7 @@ function processAttendanceRows(rows) {
     status:       colIdx("status",        5),
     makeupReason: colIdx("makeup reason", 6),
     type:         colIdx("type",          7),
+    isOldClass:   colIdx("is old class",  -1), // populated by Colab: 'yes' = this class is an old/moved class
   };
 
   console.log("Attendance headers:", headers);
@@ -216,16 +217,22 @@ function processAttendanceRows(rows) {
       const sid = cleanCell(r[col.studentId]);
       return sid && sid !== "nan" && sid !== "Student ID";
     })
-    .map(r => ({
-      studentId:    cleanCell(r[col.studentId]),
-      studentName:  cleanCell(r[col.studentName]),
-      center:       cleanCell(r[col.center]),
-      date:         cleanCell(r[col.date]),
-      class_:       cleanCell(r[col.class_]),
-      status:       cleanCell(r[col.status]),
-      makeupReason: cleanCell(r[col.makeupReason]),
-      type:         cleanCell(r[col.type]),
-    }));
+    .map(r => {
+      const oldRaw = col.isOldClass !== -1 && r[col.isOldClass] !== undefined
+        ? cleanCell(r[col.isOldClass]).toLowerCase() : "";
+      const isOldClass = ["yes","true","1","lama"].includes(oldRaw);
+      return {
+        studentId:    cleanCell(r[col.studentId]),
+        studentName:  cleanCell(r[col.studentName]),
+        center:       cleanCell(r[col.center]),
+        date:         cleanCell(r[col.date]),
+        class_:       cleanCell(r[col.class_]),
+        status:       cleanCell(r[col.status]),
+        makeupReason: cleanCell(r[col.makeupReason]),
+        type:         cleanCell(r[col.type]),
+        isOldClass,
+      };
+    });
 
   console.log("Total attendance rows loaded:", ALL_ATTENDANCE.length);
 }
@@ -476,16 +483,23 @@ function renderDetailPage(student, attendance, waLink, sarName, phone) {
     : `Hubungi ${SUPPORT_LABEL}`;
 
   // Build class map — group attendance rows by class label
+  // isOldClass: true if ALL rows in that class are flagged as old (moving class scenario)
   const classMap = {};
+  const classOldFlag = {};
   attendance.forEach(r => {
     const label = getClassLabel(r.class_);
-    if (!classMap[label]) classMap[label] = [];
+    if (!classMap[label]) { classMap[label] = []; classOldFlag[label] = true; }
     classMap[label].push(r);
+    if (!r.isOldClass) classOldFlag[label] = false; // any non-old row = not old class
   });
   const classKeys = Object.keys(classMap);
+  const hasMovingClass = classKeys.some(k => classOldFlag[k]);
   const tabsHtml  = [
     `<button class="class-tab active" data-key="__all__">Semua</button>`,
-    ...classKeys.map(k => `<button class="class-tab" data-key="${escapeHtml(k)}">${escapeHtml(k)}</button>`)
+    ...classKeys.map(k => {
+      const isOld = classOldFlag[k];
+      return `<button class="class-tab${isOld ? ' class-tab--old' : ''}" data-key="${escapeHtml(k)}" data-old="${isOld}">${escapeHtml(k)}${isOld ? ' <span class="old-badge">Kelas Lama</span>' : ''}</button>`;
+    })
   ].join("");
 
   app.innerHTML = `
@@ -513,7 +527,7 @@ function renderDetailPage(student, attendance, waLink, sarName, phone) {
       </div>
 
       <div class="term-label">
-        <span class="term-badge">📅 Summer Term 2026</span>
+        <span class="term-badge">Summer Term 2026</span>
       </div>
 
       <div class="class-tabs-wrap">${tabsHtml}</div>
@@ -522,7 +536,6 @@ function renderDetailPage(student, attendance, waLink, sarName, phone) {
       <div class="att-card">
         <div class="att-header">
           <div class="att-title" id="lp3-att-title">Riwayat Kehadiran</div>
-          <div class="att-period">Summer Term 2026</div>
         </div>
         <div class="att-legend">
           <span class="leg-item"><span class="att-dot-inline dot-present"></span>Hadir</span>
@@ -544,8 +557,9 @@ function renderDetailPage(student, attendance, waLink, sarName, phone) {
   `;
 
   // Store for tab switching — use pre-grouped classMap
-  window._lp3All      = attendance;
-  window._lp3ClassMap = classMap;
+  window._lp3All          = attendance;
+  window._lp3ClassMap     = classMap;
+  window._lp3ClassOldFlag = classOldFlag;
 
   // Attach tab click events after DOM is fully rendered
   setTimeout(function() {
@@ -561,40 +575,41 @@ function renderDetailPage(student, attendance, waLink, sarName, phone) {
 }
 
 function lp3Render(key) {
-  const all      = window._lp3All || [];
-  const classMap = window._lp3ClassMap || {};
+  const all         = window._lp3All || [];
+  const classMap    = window._lp3ClassMap || {};
+  const classOldFlag = window._lp3ClassOldFlag || {};
   // Use pre-grouped rows from classMap — do NOT re-filter from ALL_ATTENDANCE
-  const rows     = key === "__all__" ? all : (classMap[key] || []);
+  const rows        = key === "__all__" ? all : (classMap[key] || []);
+  const isOldTab    = key !== "__all__" && classOldFlag[key];
 
   // Metrics
-  const totalHadir    = rows.filter(r => r.status.toLowerCase() === "present").length;
-  const totalSessions = rows.filter(r => r.type === "Regular").length;
-  const izinUsed      = rows.filter(r => /izin/i.test(r.makeupReason)).length;
-  const izinSisa      = Math.max(0, 2 - izinUsed);
+  // "Semua" tab: count all present rows (includes make up class)
+  // Per-kelas tab: count Regular Class sessions only (exclude make up completely)
+  let metricCount, metricTotal, metricLbl, metricSub;
+  if (key === "__all__") {
+    metricCount = rows.filter(r => r.status.toLowerCase() === "present").length;
+    metricTotal = rows.length;
+    metricLbl   = "Total hadir semester ini";
+    metricSub   = `dari ${metricTotal} sesi (termasuk make up)`;
+  } else {
+    const regularRows = rows.filter(r => r.type === "Regular");
+    metricCount = regularRows.filter(r => r.status.toLowerCase() === "present").length;
+    metricTotal = regularRows.length;
+    metricLbl   = "Total hadir kelas ini";
+    metricSub   = `dari ${metricTotal} sesi reguler${isOldTab ? " · kelas lama" : ""}`;
+  }
 
-  const metricHadir = `
-    <div class="metric-card">
-      <div class="metric-icon metric-green">✓</div>
-      <div class="metric-val">${totalHadir}<span class="metric-unit"> sesi</span></div>
-      <div class="metric-lbl">Total hadir</div>
-      <div class="metric-sub">dari ${totalSessions} sesi periode ini</div>
+  const iconClass  = isOldTab ? "metric-icon metric-gray" : "metric-icon metric-green";
+  const cardClass  = isOldTab ? "metric-card metric-card--old" : "metric-card";
+  const metricHtml = `
+    <div class="${cardClass}">
+      <div class="${iconClass}">✓</div>
+      <div class="metric-val">${metricCount}<span class="metric-unit"> sesi</span></div>
+      <div class="metric-lbl">${metricLbl}</div>
+      <div class="metric-sub">${metricSub}</div>
     </div>`;
 
-  const metricMakeup = izinSisa === 0
-    ? `<div class="metric-card metric-card--warn">
-        <div class="metric-icon metric-red">✕</div>
-        <div class="metric-val">0<span class="metric-unit"> tersisa</span></div>
-        <div class="metric-lbl">Kuota make up habis</div>
-        <div class="metric-sub">Izin tidak bisa di-make up lagi</div>
-      </div>`
-    : `<div class="metric-card">
-        <div class="metric-icon metric-purple">↺</div>
-        <div class="metric-val">${izinSisa}<span class="metric-unit"> tersisa</span></div>
-        <div class="metric-lbl">Kuota make up tersisa</div>
-        <div class="metric-sub">dari 2 kuota per periode</div>
-      </div>`;
-
-  document.getElementById("lp3-metrics").innerHTML = metricHadir + metricMakeup;
+  document.getElementById("lp3-metrics").innerHTML = metricHtml;
 
   const titleEl = document.getElementById("lp3-att-title");
   if (titleEl) titleEl.textContent = key === "__all__" ? "Riwayat Kehadiran" : "Riwayat Kehadiran · " + key;
