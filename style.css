@@ -761,20 +761,10 @@ button:disabled {
 }
 
 .metrics-row {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
   margin-bottom: 14px;
 }
 
-.metric-card {
-  background: var(--white);
-  border-radius: 14px;
-  padding: 14px;
-  box-shadow: 0 2px 16px rgba(0,0,0,0.06);
-}
-
-/* legacy single-metric classes removed — replaced by .metric-stat */
+/* legacy metric-card single block removed — replaced by 3-stat version below */
 
 .att-card {
   background: var(--white);
@@ -984,11 +974,7 @@ button:disabled {
   color: rgba(255,255,255,0.85);
 }
 
-/* Metric card for old class tab */
-.metric-card--old {
-  opacity: 0.65;
-  filter: grayscale(0.8);
-}
+/* metric-card--old handled via .metric-chip--old */
 
 /* Metric icon: gray variant */
 .metric-icon.metric-gray {
@@ -996,48 +982,60 @@ button:disabled {
   color: #999;
 }
 
-/* Single metric card — horizontal layout */
-.metric-card {
+/* Opsi B — 3 chip cards side by side */
+.metric-chips {
   display: flex;
-  align-items: stretch;
-  background: #fff;
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
-  overflow: hidden;
-  padding: 0;
+  gap: 8px;
+  margin-bottom: 14px;
 }
 
-.metric-stat {
+.metric-chip {
   flex: 1;
+  background: var(--white);
+  border-radius: 12px;
+  padding: 10px 6px;
+  box-shadow: var(--shadow-card);
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 12px 6px;
   gap: 4px;
 }
 
-.metric-stat-divider {
-  width: 1px;
-  background: #f0f0f0;
-  align-self: stretch;
+.metric-chip--old {
+  opacity: 0.5;
+  filter: grayscale(0.8);
+}
+
+.mc-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
   flex-shrink: 0;
 }
 
-.metric-stat-num {
-  font-size: 26px;
+.mc-green  { background: var(--green-bg); color: var(--green); }
+.mc-red    { background: var(--red-bg);   color: var(--red);   }
+.mc-purple { background: #EEEDFE;         color: #7F77DD;      }
+
+.mc-num {
+  font-size: 22px;
   font-weight: 800;
   line-height: 1;
 }
 
-.metric-stat-num.green  { color: #2db87a; }
-.metric-stat-num.red    { color: #E24B4A; }
-.metric-stat-num.purple { color: #7F77DD; }
+.mc-num.green  { color: var(--green); }
+.mc-num.red    { color: var(--red);   }
+.mc-num.purple { color: #7F77DD;      }
 
-.metric-stat-lbl {
+.mc-lbl {
   font-size: 9px;
   font-weight: 700;
-  color: #aaa;
+  color: var(--muted);
   text-align: center;
   line-height: 1.3;
 }
