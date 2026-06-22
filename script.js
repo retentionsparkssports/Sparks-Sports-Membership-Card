@@ -582,31 +582,37 @@ function lp3Render(key) {
   const rows        = key === "__all__" ? all : (classMap[key] || []);
   const isOldTab    = key !== "__all__" && classOldFlag[key];
 
-  // Metrics
-  // "Semua" tab: count all present rows (includes make up class)
-  // Per-kelas tab: count Regular Class sessions only (exclude make up completely)
-  let metricCount, metricTotal, metricLbl, metricSub;
-  if (key === "__all__") {
-    metricCount = rows.filter(r => r.status.toLowerCase() === "present").length;
-    metricTotal = rows.length;
-    metricLbl   = "Total hadir semester ini";
-    metricSub   = `dari ${metricTotal} sesi (termasuk make up)`;
-  } else {
-    const regularRows = rows.filter(r => r.type === "Regular");
-    metricCount = regularRows.filter(r => r.status.toLowerCase() === "present").length;
-    metricTotal = regularRows.length;
-    metricLbl   = "Total hadir kelas ini";
-    metricSub   = `dari ${metricTotal} sesi reguler${isOldTab ? " · kelas lama" : ""}`;
-  }
+  // Metrics — 3 stats: Hadir / Tidak Hadir / Make Up
+  // Semua tab: all rows (Regular + Make Up)
+  // Per-kelas tab: Regular rows only (Make Up counted separately)
+  // Tidak Hadir = absent + izin + sakit (any non-present, non-makeup)
+  const targetRows = key === "__all__" ? rows : rows.filter(r => r.type === "Regular");
+  const makeupRows = key === "__all__" ? rows.filter(r => r.type === "Make Up") : rows.filter(r => r.type === "Make Up");
 
-  const iconClass  = isOldTab ? "metric-icon metric-gray" : "metric-icon metric-green";
+  const countHadir     = targetRows.filter(r => r.status.toLowerCase() === "present").length;
+  const countTidakHadir = targetRows.filter(r => {
+    const s = r.status.toLowerCase();
+    return s === "absent" || s === "leave" || s === "sakit" || s === "izin";
+  }).length;
+  const countMakeUp    = makeupRows.length;
+
   const cardClass  = isOldTab ? "metric-card metric-card--old" : "metric-card";
   const metricHtml = `
     <div class="${cardClass}">
-      <div class="${iconClass}">✓</div>
-      <div class="metric-val">${metricCount}<span class="metric-unit"> sesi</span></div>
-      <div class="metric-lbl">${metricLbl}</div>
-      <div class="metric-sub">${metricSub}</div>
+      <div class="metric-stat">
+        <div class="metric-stat-num green">${countHadir}</div>
+        <div class="metric-stat-lbl">Hadir</div>
+      </div>
+      <div class="metric-stat-divider"></div>
+      <div class="metric-stat">
+        <div class="metric-stat-num red">${countTidakHadir}</div>
+        <div class="metric-stat-lbl">Tidak Hadir</div>
+      </div>
+      <div class="metric-stat-divider"></div>
+      <div class="metric-stat">
+        <div class="metric-stat-num purple">${countMakeUp}</div>
+        <div class="metric-stat-lbl">Make Up</div>
+      </div>
     </div>`;
 
   document.getElementById("lp3-metrics").innerHTML = metricHtml;
@@ -696,7 +702,9 @@ function getStatusBadge(status, reason) {
   if (s === "present" && (!reason || reason === "Regular Class")) return { badge: "badge-present", dot: "dot-present" };
   if (s === "make up" || (s === "present" && reason && reason !== "Regular Class")) return { badge: "badge-makeup", dot: "dot-makeup" };
   if (s === "absent") return { badge: "badge-absent", dot: "dot-absent" };
-  if (s === "leave")  return { badge: "badge-leave",  dot: "dot-leave"  };
+  // izin & sakit → same red bucket as absent (Tidak Hadir)
+  if (s === "leave" || s === "izin") return { badge: "badge-absent", dot: "dot-absent" };
+  if (s === "sakit")                 return { badge: "badge-absent", dot: "dot-absent" };
   return { badge: "badge-present", dot: "dot-present" };
 }
 
