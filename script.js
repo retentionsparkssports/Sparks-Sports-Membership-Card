@@ -586,32 +586,34 @@ function lp3Render(key) {
   // Semua tab: all rows (Regular + Make Up)
   // Per-kelas tab: Regular rows only (Make Up counted separately)
   // Tidak Hadir = absent + izin + sakit (any non-present, non-makeup)
-  const targetRows = key === "__all__" ? rows : rows.filter(r => r.type === "Regular");
-  const makeupRows = key === "__all__" ? rows.filter(r => r.type === "Make Up") : rows.filter(r => r.type === "Make Up");
+  // Same counting logic for both semua and per-kelas tabs
+  const regularRows  = rows.filter(r => r.type === "Regular");
+  const makeupRows   = rows.filter(r => r.type === "Make Up");
 
-  const countHadir     = targetRows.filter(r => r.status.toLowerCase() === "present").length;
-  const countTidakHadir = targetRows.filter(r => {
+  const countHadir      = regularRows.filter(r => r.status.toLowerCase() === "present").length;
+  const countTidakHadir = regularRows.filter(r => {
     const s = r.status.toLowerCase();
     return s === "absent" || s === "leave" || s === "sakit" || s === "izin";
   }).length;
-  const countMakeUp    = makeupRows.length;
+  const countMakeUp     = makeupRows.length;
 
-  const cardClass  = isOldTab ? "metric-card metric-card--old" : "metric-card";
+  const oldCls     = isOldTab ? " metric-chip--old" : "";
   const metricHtml = `
-    <div class="${cardClass}">
-      <div class="metric-stat">
-        <div class="metric-stat-num green">${countHadir}</div>
-        <div class="metric-stat-lbl">Hadir</div>
+    <div class="metric-chips">
+      <div class="metric-chip${oldCls}">
+        <div class="mc-icon mc-green">✓</div>
+        <div class="mc-num green">${countHadir}</div>
+        <div class="mc-lbl">Hadir</div>
       </div>
-      <div class="metric-stat-divider"></div>
-      <div class="metric-stat">
-        <div class="metric-stat-num red">${countTidakHadir}</div>
-        <div class="metric-stat-lbl">Tidak Hadir</div>
+      <div class="metric-chip${oldCls}">
+        <div class="mc-icon mc-red">✕</div>
+        <div class="mc-num red">${countTidakHadir}</div>
+        <div class="mc-lbl">Tidak Hadir</div>
       </div>
-      <div class="metric-stat-divider"></div>
-      <div class="metric-stat">
-        <div class="metric-stat-num purple">${countMakeUp}</div>
-        <div class="metric-stat-lbl">Make Up</div>
+      <div class="metric-chip${oldCls}">
+        <div class="mc-icon mc-purple">↺</div>
+        <div class="mc-num purple">${countMakeUp}</div>
+        <div class="mc-lbl">Make Up</div>
       </div>
     </div>`;
 
