@@ -136,7 +136,7 @@ function processRetentionRows(rows) {
 
   const col = {
     branch:      findColumn(headers, ["branch", "branch code"], 0),
-    center:      findColumn(headers, ["center name", "center", "centre", "nama center", "branch name"], 7),
+    center:      7, // col H is always "Center" (full name) — col A "center" is just the branch code
     studentId:   findColumn(headers, ["student id", "studentid", "sid"], 1),
     studentName: findColumn(headers, ["student name", "nama siswa", "name"], 2),
     phone:       findColumn(headers, ["phone number", "phone", "nomor hp", "nomor whatsapp", "whatsapp", "no hp"], 3),
