@@ -206,7 +206,8 @@ function processAttendanceRows(rows) {
     status:       colIdx("status",        5),
     makeupReason: colIdx("makeup reason", 6),
     type:         colIdx("type",          7),
-    isOldClass:   colIdx("is old class",  -1), // populated by Colab: 'yes' = this class is an old/moved class
+    isOldClass:   colIdx("is old class",   -1), // 1 = this class is old/moved
+    isValidClass:  colIdx("is valid class", -1), // 1 = valid, 0 = potential miss-input
   };
 
   console.log("Attendance headers:", headers);
@@ -221,6 +222,9 @@ function processAttendanceRows(rows) {
       const oldRaw = col.isOldClass !== -1 && r[col.isOldClass] !== undefined
         ? cleanCell(r[col.isOldClass]).toLowerCase() : "";
       const isOldClass = ["yes","true","1","lama"].includes(oldRaw);
+      const validRaw = col.isValidClass !== -1 && r[col.isValidClass] !== undefined
+        ? cleanCell(r[col.isValidClass]).toLowerCase() : "1";
+      const isValidClass = validRaw !== "0"; // default valid unless explicitly 0
       return {
         studentId:    cleanCell(r[col.studentId]),
         studentName:  cleanCell(r[col.studentName]),
@@ -231,6 +235,7 @@ function processAttendanceRows(rows) {
         makeupReason: cleanCell(r[col.makeupReason]),
         type:         cleanCell(r[col.type]),
         isOldClass,
+        isValidClass,
       };
     });
 
@@ -423,7 +428,7 @@ function renderDashboardPage(students) {
   document.body.className = "dashboard-page";
   const phone        = new URLSearchParams(window.location.search).get("phone") || "";
   const parentsName  = formatGreetingParentName(students[0]?.parentsName || "");
-  const greeting     = parentsName ? `Halo, ${escapeHtml(parentsName)}! 👋` : "Halo! 👋";
+  const greeting     = parentsName ? `Halo, ${escapeHtml(parentsName)}!` : "Halo!";
   const multiNote    = students.length > 1
     ? `<div class="multi-note">👤 ${students.length} anak terdaftar dengan nomor ini.</div>` : "";
 
@@ -464,7 +469,7 @@ function studentCard(student, phone) {
         </div>
       </div>
       ${createExpiryBanner(student.expiryDate)}
-      <a class="detail-btn" href="?phone=${ph}&sid=${sid}">📋 Lihat Detail Attendance →</a>
+      <a class="detail-btn" href="?phone=${ph}&sid=${sid}">Lihat Detail Attendance →</a>
     </div>
   `;
 }
@@ -479,7 +484,7 @@ function renderDetailPage(student, attendance, waLink, sarName, phone) {
   const ph         = encodeURIComponent(phone || "");
   const waTarget   = waLink || SUPPORT_WA;
   const waLabel    = waLink
-    ? (sarName ? `Hubungi Student Advisor Retention (${escapeHtml(sarName)})` : "Hubungi Student Advisor Retention")
+    ? "Hubungi Student Advisor"
     : `Hubungi ${SUPPORT_LABEL}`;
 
   // Build class map — group attendance rows by class label
@@ -631,13 +636,16 @@ function lp3Render(key) {
   }
 
   tbody.innerHTML = rows.map(r => {
-    const cls          = simplifyClassName(r.class_);
+    const cls            = simplifyClassName(r.class_);
     const { badge, dot } = getStatusBadge(r.status, r.makeupReason);
-    const reasonTag    = r.makeupReason && r.makeupReason !== "Regular Class" && r.makeupReason !== ""
+    const reasonTag      = r.makeupReason && r.makeupReason !== "Regular Class" && r.makeupReason !== ""
       ? `<span class="reason-tag">${escapeHtml(r.makeupReason)}</span>` : "";
-    return `<tr>
+    const invalidTag     = !r.isValidClass
+      ? `<span class="invalid-class-tag">⚠ Kelas tidak sesuai</span>` : "";
+    const rowClass       = !r.isValidClass ? " class=\"att-row--invalid\"" : "";
+    return `<tr${rowClass}>
       <td><span class="att-dot-inline ${dot}"></span>${escapeHtml(r.date)}</td>
-      <td>${escapeHtml(cls)}${reasonTag}</td>
+      <td>${escapeHtml(cls)}${reasonTag}${invalidTag}</td>
       <td><span class="att-badge ${badge}">${escapeHtml(r.status)}</span></td>
     </tr>`;
   }).join("");
@@ -701,12 +709,12 @@ function simplifyClassName(raw) {
 
 function getStatusBadge(status, reason) {
   const s = status.toLowerCase();
-  if (s === "present" && (!reason || reason === "Regular Class")) return { badge: "badge-present", dot: "dot-present" };
-  if (s === "make up" || (s === "present" && reason && reason !== "Regular Class")) return { badge: "badge-makeup", dot: "dot-makeup" };
-  if (s === "absent") return { badge: "badge-absent", dot: "dot-absent" };
-  // izin & sakit → same red bucket as absent (Tidak Hadir)
+  // Status is the sole color driver — makeupReason is subtitle only
+  if (s === "present")  return { badge: "badge-present", dot: "dot-present" };
+  if (s === "make up")  return { badge: "badge-makeup",  dot: "dot-makeup"  };
+  if (s === "absent")   return { badge: "badge-absent",  dot: "dot-absent"  };
   if (s === "leave" || s === "izin") return { badge: "badge-absent", dot: "dot-absent" };
-  if (s === "sakit")                 return { badge: "badge-absent", dot: "dot-absent" };
+  if (s === "sakit")    return { badge: "badge-absent",  dot: "dot-absent"  };
   return { badge: "badge-present", dot: "dot-present" };
 }
 
