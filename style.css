@@ -869,6 +869,17 @@ button:disabled {
   margin-top: 2px;
 }
 
+.att-row--invalid td {
+  opacity: 0.5;
+}
+
+.invalid-class-tag {
+  display: block;
+  font-size: 9px;
+  color: #e07b00;
+  margin-top: 2px;
+}
+
 .att-empty {
   text-align: center;
   color: var(--muted);
