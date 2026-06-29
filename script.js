@@ -14,9 +14,10 @@ const SUPPORT_LABEL   = "Tim Customer Support Sparks Sports";
 const app = document.getElementById("app");
 
 let ALL_STUDENTS   = [];
-let ALL_ATTENDANCE = [];
-let ALL_BACKUP     = [];
-let DATA_READY     = false;
+let ALL_ATTENDANCE    = [];
+let ATTENDANCE_INDEX  = {};
+let ALL_BACKUP        = [];
+let DATA_READY        = false;
 let DATA_ERROR     = "";
 
 // ============================================================
@@ -91,14 +92,12 @@ async function loadData() {
     return;
   }
   try {
-    const [retentionRows, attendanceRows, backupRows] = await Promise.all([
+    const [retentionRows, attendanceRows] = await Promise.all([
       fetchCsv(SHEET_CSV_URL),
       fetchCsv(ATTENDANCE_CSV_URL).catch(() => []),
-      fetchCsv(BACKUP_CSV_URL).catch(() => []),
     ]);
     processRetentionRows(retentionRows);
     processAttendanceRows(attendanceRows);
-    processBackupRows(backupRows);
     DATA_READY = true;
   } catch (e) {
     DATA_ERROR = "Data membership belum bisa dimuat. Silakan coba beberapa saat lagi atau hubungi " + SUPPORT_LABEL + " untuk bantuan.";
@@ -210,9 +209,6 @@ function processAttendanceRows(rows) {
     previousClass: colIdx("previous class", -1), // for make up tab grouping
   };
 
-  console.log("Attendance headers:", headers);
-  console.log("Attendance col mapping:", col);
-
   ALL_ATTENDANCE = dataRows
     .filter(r => {
       const sid = cleanCell(r[col.studentId]);
@@ -238,7 +234,12 @@ function processAttendanceRows(rows) {
       };
     });
 
-  console.log("Total attendance rows loaded:", ALL_ATTENDANCE.length);
+  // Build index for O(1) lookup by studentId
+  ATTENDANCE_INDEX = {};
+  ALL_ATTENDANCE.forEach(r => {
+    if (!ATTENDANCE_INDEX[r.studentId]) ATTENDANCE_INDEX[r.studentId] = [];
+    ATTENDANCE_INDEX[r.studentId].push(r);
+  });
 }
 
 // ============================================================
@@ -312,9 +313,12 @@ function findByPhone(rawInput) {
 }
 
 function getAttendanceById(studentId) {
-  return ALL_ATTENDANCE
-    .filter(r => r.studentId === studentId)
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
+  const rows = ATTENDANCE_INDEX[studentId] || [];
+  return rows.slice().sort((a, b) => {
+    const da = a.date ? new Date(a.date) : new Date(0);
+    const db = b.date ? new Date(b.date) : new Date(0);
+    return db - da;
+  });
 }
 
 function getWaLinkById(studentId) {
@@ -427,7 +431,7 @@ function renderDashboardPage(students) {
   document.body.className = "dashboard-page";
   const phone        = new URLSearchParams(window.location.search).get("phone") || "";
   const parentsName  = formatGreetingParentName(students[0]?.parentsName || "");
-  const greeting     = parentsName ? `Halo, ${escapeHtml(parentsName)}! 👋` : "Halo! 👋";
+  const greeting     = parentsName ? `Halo, ${escapeHtml(parentsName)}!` : "Halo!";
   const multiNote    = students.length > 1
     ? `<div class="multi-note">👤 ${students.length} anak terdaftar dengan nomor ini.</div>` : "";
 
@@ -468,7 +472,7 @@ function studentCard(student, phone) {
         </div>
       </div>
       ${createExpiryBanner(student.expiryDate)}
-      <a class="detail-btn" href="?phone=${ph}&sid=${sid}">📋 Lihat Detail Attendance →</a>
+      <a class="detail-btn" href="?phone=${ph}&sid=${sid}">Lihat Detail Attendance →</a>
     </div>
   `;
 }
@@ -483,7 +487,7 @@ function renderDetailPage(student, attendance, waLink, sarName, phone) {
   const ph         = encodeURIComponent(phone || "");
   const waTarget   = waLink || SUPPORT_WA;
   const waLabel    = waLink
-    ? (sarName ? `Hubungi Student Advisor Retention (${escapeHtml(sarName)})` : "Hubungi Student Advisor Retention")
+    ? "Hubungi Student Advisor"
     : `Hubungi ${SUPPORT_LABEL}`;
 
   // Build class map — group attendance rows by class label
@@ -510,12 +514,14 @@ function renderDetailPage(student, attendance, waLink, sarName, phone) {
   });
   const classKeys = Object.keys(classMap);
   const hasMovingClass = classKeys.some(k => classOldFlag[k]);
+  const makeupAll  = attendance.filter(r => r.type && r.type.toLowerCase() === "make up");
   const tabsHtml  = [
     `<button class="class-tab active" data-key="__all__">Semua</button>`,
     ...classKeys.map(k => {
       const isOld = classOldFlag[k];
       return `<button class="class-tab${isOld ? ' class-tab--old' : ''}" data-key="${escapeHtml(k)}" data-old="${isOld}">${escapeHtml(k)}${isOld ? ' <span class="old-badge">Kelas Lama</span>' : ''}</button>`;
-    })
+    }),
+    makeupAll.length ? `<button class="class-tab class-tab--makeup" data-key="__makeup__">Make Up</button>` : ""
   ].join("");
 
   app.innerHTML = `
@@ -574,6 +580,7 @@ function renderDetailPage(student, attendance, waLink, sarName, phone) {
 
   // Store for tab switching — use pre-grouped classMap
   window._lp3All          = attendance;
+  window._lp3MakeupAll    = makeupAll;
   window._lp3ClassMap     = classMap;
   window._lp3ClassOldFlag = classOldFlag;
 
@@ -591,21 +598,56 @@ function renderDetailPage(student, attendance, waLink, sarName, phone) {
 }
 
 function lp3Render(key) {
-  const all         = window._lp3All || [];
-  const classMap    = window._lp3ClassMap || {};
+  const all          = window._lp3All || [];
+  const makeupAll    = window._lp3MakeupAll || [];
+  const classMap     = window._lp3ClassMap || {};
   const classOldFlag = window._lp3ClassOldFlag || {};
-  // Use pre-grouped rows from classMap — do NOT re-filter from ALL_ATTENDANCE
-  const rows        = key === "__all__" ? all : (classMap[key] || []);
-  const isOldTab    = key !== "__all__" && classOldFlag[key];
 
-  // Metrics — 3 stats: Hadir / Tidak Hadir / Make Up
-  // Semua tab: all rows (Regular + Make Up)
-  // Per-kelas tab: Regular rows only (Make Up counted separately)
-  // Tidak Hadir = absent + izin + sakit (any non-present, non-makeup)
-  // Same counting logic for both semua and per-kelas tabs
-  const regularRows  = rows.filter(r => r.type === "Regular");
-  const makeupRows   = rows.filter(r => r.type === "Make Up");
+  const isMakeUpTab = key === "__makeup__";
+  const rows        = isMakeUpTab ? makeupAll : (key === "__all__" ? all : (classMap[key] || []));
+  const isOldTab    = !isMakeUpTab && key !== "__all__" && classOldFlag[key];
 
+  const metricsEl = document.getElementById("lp3-metrics");
+  const titleEl   = document.getElementById("lp3-att-title");
+  const tbody     = document.getElementById("lp3-tbody");
+  if (!tbody) return;
+
+  if (isMakeUpTab) {
+    // Make Up tab — single chip: total, then list
+    const countMU = makeupAll.length;
+    if (metricsEl) metricsEl.innerHTML = `
+      <div class="metric-chips">
+        <div class="metric-chip metric-chip--makeup">
+          <div class="mc-icon mc-purple">↺</div>
+          <div class="mc-num purple">${countMU}</div>
+          <div class="mc-lbl">Total Make Up</div>
+        </div>
+      </div>`;
+    if (titleEl) titleEl.textContent = "Riwayat Make Up";
+
+    if (!makeupAll.length) {
+      tbody.innerHTML = `<tr><td colspan="3" class="att-empty">Belum ada data make up.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = makeupAll.map(r => {
+      const cls            = simplifyClassName(r.class_);
+      const { badge, dot } = getStatusBadge(r.status, r.makeupReason);
+      const reasonTag      = r.makeupReason && r.makeupReason !== ""
+        ? `<span class="reason-tag">${escapeHtml(r.makeupReason)}</span>` : "";
+      const prevTag        = r.previousClass
+        ? `<span class="prev-class-tag">↩ ${escapeHtml(simplifyClassName(r.previousClass))}</span>` : "";
+      return `<tr>
+        <td><span class="att-dot-inline ${dot}"></span>${escapeHtml(r.date)}</td>
+        <td>${escapeHtml(cls)}${reasonTag}${prevTag}</td>
+        <td><span class="att-badge ${badge}">${escapeHtml(r.status)}</span></td>
+      </tr>`;
+    }).join("");
+    return;
+  }
+
+  // Regular / Semua / per-kelas tab
+  const regularRows     = rows.filter(r => r.type === "Regular");
+  const makeupRows      = rows.filter(r => r.type === "Make Up");
   const countHadir      = regularRows.filter(r => r.status.toLowerCase() === "present").length;
   const countTidakHadir = regularRows.filter(r => {
     const s = r.status.toLowerCase();
@@ -613,8 +655,8 @@ function lp3Render(key) {
   }).length;
   const countMakeUp     = makeupRows.length;
 
-  const oldCls     = isOldTab ? " metric-chip--old" : "";
-  const metricHtml = `
+  const oldCls = isOldTab ? " metric-chip--old" : "";
+  if (metricsEl) metricsEl.innerHTML = `
     <div class="metric-chips">
       <div class="metric-chip${oldCls}">
         <div class="mc-icon mc-green">✓</div>
@@ -633,13 +675,7 @@ function lp3Render(key) {
       </div>
     </div>`;
 
-  document.getElementById("lp3-metrics").innerHTML = metricHtml;
-
-  const titleEl = document.getElementById("lp3-att-title");
   if (titleEl) titleEl.textContent = key === "__all__" ? "Riwayat Kehadiran" : "Riwayat Kehadiran · " + key;
-
-  const tbody = document.getElementById("lp3-tbody");
-  if (!tbody) return;
 
   if (!rows.length) {
     tbody.innerHTML = `<tr><td colspan="3" class="att-empty">Belum ada data attendance untuk periode ini.</td></tr>`;
@@ -647,9 +683,9 @@ function lp3Render(key) {
   }
 
   tbody.innerHTML = rows.map(r => {
-    const cls          = simplifyClassName(r.class_);
+    const cls            = simplifyClassName(r.class_);
     const { badge, dot } = getStatusBadge(r.status, r.makeupReason);
-    const reasonTag    = r.makeupReason && r.makeupReason !== "Regular Class" && r.makeupReason !== ""
+    const reasonTag      = r.makeupReason && r.makeupReason !== "Regular Class" && r.makeupReason !== ""
       ? `<span class="reason-tag">${escapeHtml(r.makeupReason)}</span>` : "";
     return `<tr>
       <td><span class="att-dot-inline ${dot}"></span>${escapeHtml(r.date)}</td>
@@ -717,12 +753,11 @@ function simplifyClassName(raw) {
 
 function getStatusBadge(status, reason) {
   const s = status.toLowerCase();
-  if (s === "present" && (!reason || reason === "Regular Class")) return { badge: "badge-present", dot: "dot-present" };
-  if (s === "make up" || (s === "present" && reason && reason !== "Regular Class")) return { badge: "badge-makeup", dot: "dot-makeup" };
-  if (s === "absent") return { badge: "badge-absent", dot: "dot-absent" };
-  // izin & sakit → same red bucket as absent (Tidak Hadir)
+  if (s === "present")  return { badge: "badge-present", dot: "dot-present" };
+  if (s === "make up")  return { badge: "badge-makeup",  dot: "dot-makeup"  };
+  if (s === "absent")   return { badge: "badge-absent",  dot: "dot-absent"  };
   if (s === "leave" || s === "izin") return { badge: "badge-absent", dot: "dot-absent" };
-  if (s === "sakit")                 return { badge: "badge-absent", dot: "dot-absent" };
+  if (s === "sakit")    return { badge: "badge-absent",  dot: "dot-absent"  };
   return { badge: "badge-present", dot: "dot-present" };
 }
 
