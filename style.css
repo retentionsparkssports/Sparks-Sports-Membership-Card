@@ -1035,10 +1035,17 @@ button:disabled {
 }
 
 .metric-chip--makeup {
-  min-width: 120px;
-  max-width: 160px;
-  margin: 0 auto;
+  width: 100%;
 }
+Cukup hapus min-width, max-width, margin: 0 auto, ganti dengan width: 100%. Ini bakal bikin box-nya melebar penuh ke kiri-kanan, presisi sama lebar tab row ("Semua / Gymnastics / ...") di atasnya dan card tabel "Riwayat Make Up" di bawahnya — karena semuanya ada di dalam container yang sama.
+
+Posisinya di style.css ada persis di bawah blok .metric-chip { ... } dan di atas .metric-chip--old { ... }, jadi tinggal replace di tempat yang sama.
+
+Mau aku sekalian buatin file style.css final yang udah gabung 2 perbaikan (border make-up + lebar box ini) biar tinggal kamu download & timpa?
+
+
+
+Ingin di
 
 .metric-chip--old {
   opacity: 0.5;
