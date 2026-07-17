@@ -844,9 +844,11 @@ button:disabled {
   white-space: nowrap;
   color: #555;
   font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+}
+
+.att-table td:first-child .att-dot-inline {
+  margin-right: 6px;
+  vertical-align: middle;
 }
 
 .att-badge {
