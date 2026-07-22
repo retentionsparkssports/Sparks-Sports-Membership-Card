@@ -2,39 +2,37 @@
 // SPARKS MEMBERSHIP CARD - GITHUB PAGES VERSION
 // ============================================================
 
-const SHEET_CSV_URL      = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRd554_fsWqmOS8E3ghxfZHT8M7TgXsAdda5N8XjNQ18dq-hLWof7ge_vQchvVWoLvkV3_3vrCnkd_s/pub?gid=GID_RETENTION&single=true&output=csv"; // Compiled_Retention
-const ATTENDANCE_BASE_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRd554_fsWqmOS8E3ghxfZHT8M7TgXsAdda5N8XjNQ18dq-hLWof7ge_vQchvVWoLvkV3_3vrCnkd_s/pub"; // base URL for per-center attendance tabs
-// BACKUP_CSV_URL removed — V2 uses per-center attendance tabs
+const SHEET_CSV_URL      = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRd554_fsWqmOS8E3ghxfZHT8M7TgXsAdda5N8XjNQ18dq-hLWof7ge_vQchvVWoLvkV3_3vrCnkd_s/pub?gid=2025872883&single=true&output=csv"; // Compiled_Retention
+const ATTENDANCE_BASE_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRd554_fsWqmOS8E3ghxfZHT8M7TgXsAdda5N8XjNQ18dq-hLWof7ge_vQchvVWoLvkV3_3vrCnkd_s/pub";
 
-// ── Center → Attendance tab gid mapping ─────────────────────
-// Replace GID_XXX with actual gid from published sheet
 const ATTENDANCE_GID = {
-  "BDM": "GID_BDM",
-  "BLS": "GID_BLS",
-  "BSD": "GID_BSD",
-  "CKR": "GID_CKR",
-  "HIB": "GID_HIB",
-  "KGD": "GID_KGD",
-  "KLM": "GID_KLM",
-  "KMP": "GID_KMP",
-  "KWC": "GID_KWC",
-  "MRG": "GID_MRG",
-  "PJR": "GID_PJR",
-  "PJT": "GID_PJT",
-  "PML": "GID_PML",
-  "SBG": "GID_SBG",
-  "SBK": "GID_SBK",
-  "STR": "GID_STR",
-  "TGC": "GID_TGC",
-  "TJD": "GID_TJD",
-  "YGC": "GID_YGC",
+  "BDM": "1125807717",
+  "BLS": "1115309847",
+  "BSD": "393946183",
+  "CKR": "1747390602",
+  "HIB": "273918329",
+  "KGD": "1571057810",
+  "KLM": "1495939396",
+  "KMP": "1499734114",
+  "KWC": "1369083292",
+  "MRG": "240397886",
+  "PJR": "1120211430",
+  "PJT": "1825095076",
+  "PML": "447068724",
+  "SBG": "860194463",
+  "SBK": "743944205",
+  "STR": "1143968010",
+  "TGC": "1850784799",
+  "TJD": "1551787374",
+  "YGC": "1554936951",
 };
 
 function getAttendanceCsvUrl(centerCode) {
   const gid = ATTENDANCE_GID[centerCode];
-  if (!gid || gid.startsWith("GID_")) return null; // not configured yet
+  if (!gid) return null;
   return ATTENDANCE_BASE_URL + "?gid=" + gid + "&single=true&output=csv";
 }
+
 
 const LOGO_URL        = "logo.png";
 const PROXY_PREFIX    = "https://api.allorigins.win/raw?url=";
@@ -86,8 +84,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       return best;
     }, null);
     if (!student) { renderNotFoundPage(phone || studentId); return; }
-    // V2: fetch attendance for this center if not yet loaded
-    const centerCode = (student.branch || student.center || "").split(",")[0].trim().toUpperCase();
+    const centerCode = (student.branch || "").split("/")[0].trim().toUpperCase() ||
+      (student.center || "").replace(/[^A-Z]/g,"").slice(0,3);
     await fetchAttendanceForCenter(centerCode);
     const attendance = getAttendanceById(studentId);
     const waLink     = getWaLinkById(studentId);
@@ -125,7 +123,6 @@ async function loadData() {
     return;
   }
   try {
-    // V2: fetch Retention only on init — Attendance fetched per-center on demand
     const retentionRows = await fetchCsv(SHEET_CSV_URL);
     processRetentionRows(retentionRows);
     DATA_READY = true;
@@ -343,7 +340,7 @@ function findByPhone(rawInput) {
 }
 
 async function fetchAttendanceForCenter(centerCode) {
-  if (ATTENDANCE_INDEX["__loaded_" + centerCode]) return; // already loaded
+  if (ATTENDANCE_INDEX["__loaded_" + centerCode]) return;
   const url = getAttendanceCsvUrl(centerCode);
   if (!url) { console.warn("No gid configured for center:", centerCode); return; }
   try {
