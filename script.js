@@ -741,7 +741,7 @@ function lp3Render(key) {
 
 function createExpiryBanner(expiryStr) {
   const date = parseExpiryDate(expiryStr);
-  if (!date) {
+  if (!date || date.getFullYear() < 2020) {
     return `<div class="expiry-box expiry-unknown">
       <div class="ex-label">Membership Berakhir</div>
       <div class="ex-date">Belum tersedia</div>
